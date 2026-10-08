@@ -6,25 +6,65 @@ import { createServer } from "./server.js";
 
 const app = createMcpExpressApp({ host: config.host });
 
+const bearerToken = process.env.MCP_BEARER_TOKEN;
+
+if (!bearerToken) {
+  throw new Error("MCP_BEARER_TOKEN is not configured. Refusing to start.");
+}
+
+function requireBearerToken(req: Request, res: Response): boolean {
+  const authorization = req.header("authorization");
+
+  if (!authorization || !authorization.startsWith("Bearer ")) {
+    res.status(401).json({
+      error: "Unauthorized",
+      message: "Missing Bearer token.",
+    });
+    return false;
+  }
+
+  const token = authorization.slice("Bearer ".length);
+
+  if (token !== bearerToken) {
+    res.status(401).json({
+      error: "Unauthorized",
+      message: "Invalid Bearer token.",
+    });
+    return false;
+  }
+
+  return true;
+}
+
 // Stateless Streamable HTTP: a fresh server+transport per request.
 // No session is held in memory, so many agents can share the server
 // and a pm2 restart never strands anyone.
 app.post("/mcp", async (req: Request, res: Response) => {
+  if (!requireBearerToken(req, res)) return;
+
   const server = createServer();
-  const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
+  const transport = new StreamableHTTPServerTransport({
+    sessionIdGenerator: undefined,
+  });
+
   res.on("close", () => {
     void transport.close();
     void server.close();
   });
+
   try {
     await server.connect(transport);
     await transport.handleRequest(req, res, req.body);
   } catch (err) {
     console.error("MCP request failed:", err);
+
     if (!res.headersSent) {
       res.status(500).json({
         jsonrpc: "2.0",
-        error: { code: -32603, message: "Internal server error" },
+        error: {
+          code: -32603,
+          message: "Internal server error",
+        },
         id: null,
       });
     }
@@ -35,18 +75,27 @@ app.post("/mcp", async (req: Request, res: Response) => {
 const methodNotAllowed = (_req: Request, res: Response) => {
   res.status(405).json({
     jsonrpc: "2.0",
-    error: { code: -32000, message: "Method not allowed. Use POST /mcp." },
+    error: {
+      code: -32000,
+      message: "Method not allowed. Use POST /mcp.",
+    },
     id: null,
   });
 };
+
 app.get("/mcp", methodNotAllowed);
 app.delete("/mcp", methodNotAllowed);
 
 app.get("/health", (_req, res) => {
-  res.json({ status: "ok", name: "mcp-file-server" });
+  res.json({
+    status: "ok",
+    name: "mcp-file-server",
+  });
 });
 
 app.listen(config.port, config.host, () => {
-  console.error(`mcp-file-server listening on http://${config.host}:${config.port}/mcp`);
+  console.error(
+    `mcp-file-server listening on http://${config.host}:${config.port}/mcp`,
+  );
   console.error(`workspace root: ${config.workspaceRoot}`);
 });

@@ -69,7 +69,7 @@ export function defineTool<S extends z.ZodRawShape>(
         }
         return fail(message);
       } finally {
-        console.error(
+        if (process.env.LOG_CALLS !== "0") console.error(
           JSON.stringify({
             ts: new Date().toISOString(),
             tool: def.name,
