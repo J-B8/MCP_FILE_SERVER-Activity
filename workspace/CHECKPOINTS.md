@@ -36,3 +36,39 @@ Skipped tests: 9 symlink-dependent tests. They skip because the Windows environm
 Known limitation: symlink-specific automated tests were not executable in the current Windows environment. The implementation remains unchanged.
 
 Result: PASS (with the Windows symlink limitation noted above)
+
+## M3 Checkpoint - Deployment (PARTIAL, IN PROGRESS)
+
+Date: 2026-10-09
+
+Status: IN PROGRESS. M3 is NOT complete and must not be treated as passed.
+
+Verified so far (source in brackets):
+
+- [x] PM2 7.0.4 reports `mcp-file-server` as online [reported by project owner from PM2 output]
+- [x] Local `/health` returns `{"status":"ok","name":"mcp-file-server"}` [reported by project owner]
+- [x] Public ngrok `/health` returns HTTP 200 [reported by project owner]
+- [x] Unauthenticated `POST /mcp` returns HTTP 401 [reported by project owner]
+- [x] Claude successfully used `list_files` and `read_file` through the connected MCP server [observed by Claude in chat, 2026-10-09]
+
+Not yet verified:
+
+- [ ] PM2 persistence and restart behavior
+- [ ] Authenticated external MCP access (valid bearer token accepted; missing or wrong token rejected)
+- [ ] `search_code`, `git_status`, `git_commit` implemented and tested (not observed among the tools exposed through the connection on 2026-10-09; confirm whether they exist)
+- [ ] Documentation and demo preparation
+
+Caveats:
+
+- The successful Claude calls do not independently prove which process served them. They are consistent with the PM2-managed server but do not demonstrate it.
+- Claude's calls were made without a bearer token, so they say nothing about authenticated access.
+- Symlink protection remains incompletely verified. The 9 symlink-dependent tests (see M2) have still not run; the Windows environment did not permit symbolic-link creation. Re-run them where symlinks are allowed and append the result as a new checkpoint.
+
+Remaining work:
+
+1. Verify PM2 persistence and restart behavior.
+2. Test authenticated external MCP access.
+3. Implement and test `search_code`, `git_status` and `git_commit` if not already present.
+4. Complete documentation and demo preparation.
+
+Result: NOT YET PASS (M3 incomplete)
