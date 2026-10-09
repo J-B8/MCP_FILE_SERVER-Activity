@@ -1,14 +1,25 @@
 import "dotenv/config";
 import path from "node:path";
 import fs from "node:fs";
+import { validateSecret } from "./auth.js";
 
 const root = path.resolve(process.env.WORKSPACE_ROOT ?? "./workspace");
 fs.mkdirSync(root, { recursive: true });
 
 export const config = {
   port: Number(process.env.PORT ?? 3000),
-  // Bind to loopback only. ngrok (M3) forwards to this; nothing else can reach it.
+
   host: process.env.HOST ?? "127.0.0.1",
-  // realpath so the sandbox root itself is canonical (matters once symlinks are checked in M2).
+
   workspaceRoot: fs.realpathSync(root),
+
+  authToken: validateSecret(
+    "MCP_AUTH_TOKEN",
+    process.env.MCP_AUTH_TOKEN ?? process.env.MCP_BEARER_TOKEN,
+  ),
+
+  pathSecret: validateSecret(
+    "MCP_PATH_SECRET",
+    process.env.MCP_PATH_SECRET,
+  ),
 } as const;

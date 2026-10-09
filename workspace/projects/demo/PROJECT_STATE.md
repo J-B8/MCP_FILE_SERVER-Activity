@@ -38,7 +38,7 @@ Safety and quality in place:
 - filesystem-aware protection via `resolveSafe()` (symlinks, canonical root)
 - `.git` and `node_modules` cannot be modified by any tool
 - output limits and chunking (`list_files` max_entries, `read_file` ranges + max_chars)
-- one JSON log line per handled tool call (stderr)
+- one JSON log line per successfully parsed tool call handled by the tool helper (stderr)
 - destructive tools annotated
 - `write_file` will not overwrite by default
 - `str_replace` requires exactly one match
@@ -53,12 +53,6 @@ Windows run:
 - 9 skipped
 
 The 9 skipped tests are symlink-dependent tests. The Windows environment did not permit symbolic-link creation.
-
-Linux verification:
-
-- 73 total
-- 73 passed
-- 0 skipped
 
 ## Manual M2 verification
 
