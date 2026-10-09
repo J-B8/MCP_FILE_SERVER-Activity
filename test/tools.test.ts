@@ -5,6 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
+import { execFileSync } from "node:child_process";
 
 let base: string, root: string, outside: string, client: Client;
 let symlinksOk = true;
@@ -16,18 +17,20 @@ before(async () => {
   fs.mkdirSync(root);
   fs.mkdirSync(outside);
   fs.writeFileSync(path.join(outside, "secret.txt"), "TOP SECRET");
-  fs.mkdirSync(path.join(root, ".git"));
-  fs.writeFileSync(path.join(root, ".git", "config"), "[core]");
+  execFileSync("git", ["init", "-q"], { cwd: root });
   try { fs.symlinkSync(outside, path.join(root, "link-dir"), "dir"); } catch { symlinksOk = false; }
 
   process.env.WORKSPACE_ROOT = root; // must be set BEFORE config.ts loads
   process.env.LOG_CALLS = "0"; // keep test output readable
+  process.env.GIT_ROOT = root;
+
   const { createServer } = await import("../src/server.js");
   const [ct, st] = InMemoryTransport.createLinkedPair();
   await createServer().connect(st);
   client = new Client({ name: "test", version: "1.0.0" });
   await client.connect(ct);
 });
+
 after(() => fs.rmSync(base, { recursive: true, force: true }));
 
 async function call(name: string, args: Record<string, unknown>) {
@@ -41,9 +44,147 @@ const expectError = async (name: string, args: Record<string, unknown>, re: RegE
   assert.match(r.text, re);
 };
 
-test("exposes the expected tools", async () => {
+test("exposes the currently implemented tools", async () => {
   const names = (await client.listTools()).tools.map((t) => t.name).sort();
-  assert.deepEqual(names, ["delete_file", "list_files", "read_file", "str_replace", "write_file"]);
+
+    assert.deepEqual(names, [
+      "delete_file",
+      "git_commit",
+      "git_status",
+      "list_files",
+      "read_file",
+      "search_code",
+      "str_replace",
+      "write_file",
+    ]);
+});
+
+test("git_status reports the current branch and untracked files", async () => {
+  const r = await call("git_status", {});
+
+  assert.equal(r.isError, false, r.text);
+  assert.match(r.text, /## .*main/i);
+
+  fs.writeFileSync(path.join(root, "git-status-demo.txt"), "test");
+
+  const updated = await call("git_status", {});
+
+  assert.equal(updated.isError, false, updated.text);
+  assert.match(updated.text, /git-status-demo\.txt/);
+});
+
+test("git_commit commits an explicitly selected file", async () => {
+  const filePath = path.join(root, "commit-demo.txt");
+  fs.writeFileSync(filePath, "Commit test content");
+
+  const result = await call("git_commit", {
+    message: "test: verify git_commit tool",
+    paths: ["commit-demo.txt"],
+  });
+
+  assert.equal(result.isError, false, result.text);
+  assert.match(result.text, /commit/i);
+
+  const committedContent = execFileSync(
+    "git",
+    ["show", "HEAD:commit-demo.txt"],
+    { cwd: root, encoding: "utf-8" },
+  );
+
+  assert.equal(committedContent, "Commit test content");
+});
+
+test("git_commit rejects paths outside the workspace", async () => {
+  const result = await call("git_commit", {
+    message: "test: reject unsafe path",
+    paths: ["../outside/secret.txt"],
+  });
+
+  assert.equal(result.isError, true);
+  assert.match(result.text, /escape|inside the workspace|rejected/i);
+});
+
+test("git_commit refuses pre-existing staged changes", async () => {
+  const stagedPath = path.join(root, "already-staged.txt");
+  const commitPath = path.join(root, "new-commit.txt");
+
+  fs.writeFileSync(stagedPath, "Staged separately");
+  fs.writeFileSync(commitPath, "Selected for commit");
+
+  execFileSync("git", ["add", "--", "already-staged.txt"], {
+    cwd: root,
+  });
+
+  const result = await call("git_commit", {
+    message: "test: staged-change protection",
+    paths: ["new-commit.txt"],
+  });
+
+  assert.equal(result.isError, true);
+  assert.match(result.text, /existing staged changes/i);
+
+  // The pre-existing staged file must remain staged, not committed.
+  assert.equal(
+    execFileSync("git", ["diff", "--cached", "--name-only"], {
+      cwd: root,
+      encoding: "utf-8",
+    }).trim(),
+    "already-staged.txt",
+  );
+
+  // Clean up so this test does not affect later tests.
+  execFileSync("git", ["reset", "--", "already-staged.txt"], {
+    cwd: root,
+  });
+});
+
+test("search_code finds matching lines and reports relative paths", async () => {
+  fs.mkdirSync(path.join(root, "search-demo"), { recursive: true });
+  fs.writeFileSync(
+    path.join(root, "search-demo", "example.ts"),
+    'const greeting = "Hello MCP";\nconst count = 42;\n',
+  );
+
+  const r = await call("search_code", {
+    query: "hello mcp",
+    path: "search-demo",
+  });
+
+  assert.equal(r.isError, false, r.text);
+  assert.match(r.text, /search-demo\/example\.ts:1/);
+  assert.match(r.text, /Hello MCP/);
+  assert.ok(!r.text.includes(base), "Search results must not reveal absolute disk paths");
+});
+
+test("search_code rejects paths outside the workspace", async () => {
+  await expectError(
+    "search_code",
+    { query: "TOP SECRET", path: "../outside/secret.txt" },
+    /escapes|Absolute/,
+  );
+
+  assert.equal(
+    fs.readFileSync(path.join(outside, "secret.txt"), "utf-8"),
+    "TOP SECRET",
+  );
+});
+
+test("search_code respects max_results", async () => {
+  fs.mkdirSync(path.join(root, "search-limit"), { recursive: true });
+  fs.writeFileSync(
+    path.join(root, "search-limit", "matches.txt"),
+    "needle one\nneedle two\nneedle three\n",
+  );
+
+  const r = await call("search_code", {
+    query: "needle",
+    path: "search-limit",
+    max_results: 2,
+  });
+
+  assert.equal(r.isError, false, r.text);
+  assert.match(r.text, /Matches: 2\+/);
+  assert.match(r.text, /capped at 2/i);
 });
 
 describe("every tool rejects path escapes", () => {
@@ -122,11 +263,33 @@ describe("file tool behaviour", () => {
   });
 
   test(".git is protected from modification", async () => {
-    await expectError("write_file", { path: ".git/config", content: "x", overwrite: true }, /\.git/);
-    await expectError("str_replace", { path: ".git/config", old_str: "core", new_str: "x" }, /\.git/);
-    await expectError("delete_file", { path: ".git/config" }, /\.git/);
-    assert.equal(fs.readFileSync(path.join(root, ".git", "config"), "utf-8"), "[core]");
-  });
+  const configPath = path.join(root, ".git", "config");
+  const originalContent = fs.readFileSync(configPath, "utf-8");
+
+  await expectError(
+    "write_file",
+    { path: ".git/config", content: "x", overwrite: true },
+    /\.git/,
+  );
+
+  await expectError(
+    "str_replace",
+    { path: ".git/config", old_str: "core", new_str: "x" },
+    /\.git/,
+  );
+
+  await expectError(
+    "delete_file",
+    { path: ".git/config" },
+    /\.git/,
+  );
+
+  assert.equal(
+    fs.readFileSync(configPath, "utf-8"),
+    originalContent,
+    "The .git config file must remain unchanged",
+  );
+});
 
   test("schema is strict: unknown keys and bad types are rejected", async () => {
     await expectError("write_file", { path: "x.txt", content: "x", bogus: 1 }, /Unrecognized|Invalid/);
