@@ -4,6 +4,8 @@ A sandboxed file server for AI agents. It exposes eight single-purpose tools ove
 
 **Last reviewed:** 2026-10-16
 
+**Project status: COMPLETE.** The MCP File Server implementation and final documentation handoff are complete. Typecheck and the production build passed, and the latest owner-reported test run reports 80 passed, 0 failed, and 0 skipped. Remaining deployment/authentication and live symlink checks are documented as residual verification caveats; they are not represented as passed.
+
 **Evidence labels:** Verification claims are distinguished as Verified live, Automated tests, Reported, or Not yet verified. Verified live means a tool was called through the connected MCP server or a live endpoint was checked and the result was observed. Automated tests means covered by the test suite; the latest run on 2026-10-16 reported 80 total, 80 passed, 0 failed, and 0 skipped. Reported means stated in handoff files, tool descriptions, or by the project owner, but not independently re-run. Not yet verified means none of the above.
 
 ## Technology stack

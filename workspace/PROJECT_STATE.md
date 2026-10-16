@@ -17,6 +17,10 @@ Node.js + TypeScript MCP file server using the official TypeScript MCP SDK and s
 
 Automated results and live verification are different forms of evidence and must not be merged (D-013).
 
+## Final project status
+
+**COMPLETE — implementation and documentation handoff finished.** The eight-tool MCP File Server is implemented; typecheck and production build passed, and the latest owner-reported test run reports 80 passed, 0 failed, and 0 skipped. The repository handoff documentation is reconciled and committed. Remaining deployment/authentication edge cases and live symlink-escape behavior remain explicitly listed below as residual verification caveats; completion does not mean those unverified checks passed.
+
 ## Milestone status
 
 | Milestone | Status | Notes |
@@ -60,9 +64,12 @@ Automated results and live verification are different forms of evidence and must
 
 The last local status snapshot supplied for review listed modified documentation files and two untracked JSON files. A separate later snapshot in earlier handoff notes also included `src/index.ts`. These are historical snapshots, not a live query of the user's local working tree.
 
-## Remaining work
+## Residual verification caveats (non-blocking for project handoff)
 
-1. Review the final diff of the intended documentation files against the actual local changes.
-2. Confirm which files, if any, should be included in the submission; review the two JSON files before staging.
-3. Verify remote status before claiming the local test commit has or has not been pushed.
-4. Preserve all authentication, deployment, and symlink caveats until supported by fresh evidence.
+1. Verify invalid-token/Bearer-header behavior and the /mcp/direct authentication path.
+2. Verify PM2 restart and reboot persistence.
+3. Run/confirm live symlink-escape checks in an environment that supports symlinks.
+4. Review init.json and initialize-request.json before deciding whether they belong in the submission; they remain excluded unless explicitly approved.
+5. Preserve these caveats until fresh evidence supports changing their status.
+
+The implementation and documentation handoff are complete. These items are recorded as operational/security follow-up checks, not as claims that the project is unfinished.
