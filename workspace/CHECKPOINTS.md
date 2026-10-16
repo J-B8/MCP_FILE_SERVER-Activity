@@ -141,3 +141,39 @@ Date: 2026-10-16
 - Review the final Git diff.
 - Verify remaining deployment and authentication behavior.
 - Decide which reviewed changes to include in the submission.
+
+---
+
+## Checkpoint 5 — Final Handoff Reconciliation
+
+Date: 2026-10-16
+
+### Latest owner-reported build and test results
+
+- TypeScript typecheck passed.
+- Production build passed.
+- Automated tests: 80 passed, 0 failed, 0 skipped.
+- Earlier checkpoints recorded 71 passed and 9 skipped symlink-dependent tests. Those are historical results from earlier runs and remain unchanged.
+
+### Tool verification evidence
+
+- All eight tools were displayed in MCP Inspector.
+- Live checks were recorded for the core file operations, search, Git status, and the safeguards described in the earlier checkpoints.
+- A successful local `git_commit` was tested through MCP Inspector:
+  - Commit: `5d2860d12947425d0c76c56d0702081bb704fea5`
+  - Message: `test: verify git_commit tool`
+  - Test file: `workspace/git-commit-test.txt`
+- Seven tools had live calls recorded through the Claude connector. A successful `git_commit` through Claude was not verified.
+
+### Deployment and security caveats
+
+- PM2 online status and local `/health` success were observed on 2026-10-15; current status and restart/reboot persistence are not freshly verified here.
+- Public `/mcp/direct` unauthenticated POST was reported to return HTTP 401. This does not verify invalid-token behavior, Bearer-header behavior, or every endpoint.
+- Live symlink-escape behavior remains unverified.
+- The current remote status of the successful local test commit remains unverified. Earlier statements that it had not been pushed are historical, not a current remote check.
+
+### Handoff cautions
+
+- The final documentation diff has not been independently compared with the user's local working tree.
+- `init.json` and `initialize-request.json` were previously listed as untracked and have not been reviewed for submission inclusion.
+- Do not describe the project as fully verified; retain the unresolved items above until fresh evidence is recorded.

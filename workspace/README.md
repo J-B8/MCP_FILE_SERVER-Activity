@@ -46,13 +46,13 @@ All paths are relative to the workspace root. Argument names and limits come fro
 | Security | `../` paths rejected | Verified live (`read_file`, `git_commit`) |
 | Security | Absolute paths rejected, including Windows drive paths | Verified live (`read_file`) |
 | Security | UNC paths, NUL bytes, `.git` and `node_modules` protection, atomic writes, single-file delete | Reported |
-| Security | Symlink escape protection (`resolveSafe()`) | Implemented; its 9 tests were **skipped, not executed**, so it is unproven on the test machine |
+| Security | Symlink escape protection (`resolveSafe()`) | Implemented. Earlier runs skipped 9 symlink-dependent tests; the latest owner-reported run on 2026-10-16 reports 80 passed, 0 failed, 0 skipped. The live symlink-escape behavior has not been independently verified |
 | Deployment | PM2 reported `mcp-file-server` online on 2026-10-15 | Verified live |
 | Deployment | Unauthenticated `POST /mcp` returns 401; public `/health` and OAuth metadata checks | Reported |
 | Deployment | Claude connected through OAuth and the tools above ran through that connection | Authorization: Reported. Tool calls: Verified live. |
 | Deployment | PM2 restart and reboot persistence; behaviour with an invalid token; `/mcp/direct` | **Not yet verified** |
 | Build and tests | TypeScript build | Run on 2026-10-16; completed without visible TypeScript errors |
-| Build and tests | Test suite | Run on 2026-10-16: 80 total, **80 passed, 0 failed, 0 skipped** |
+| Build and tests | Test suite | Owner-reported run on 2026-10-16: 80 total, **80 passed, 0 failed, 0 skipped** |
 
 ## Workspace restrictions
 
@@ -82,7 +82,7 @@ npm.cmd run build
 npm.cmd test
 ```
 
-The production entry point is dist/index.js (Reported). On 2026-10-16, npm.cmd run typecheck, npm.cmd run build, and npm.cmd test all completed successfully. The test suite reported 80 total: 80 passed, 0 failed, and 0 skipped. Earlier checkpoints recorded nine skipped symlink tests; those historical results are retained in the checkpoint history and should not be confused with the latest run.
+The production entry point is dist/index.js (Reported). On 2026-10-16, npm.cmd run typecheck, npm.cmd run build, and npm.cmd test all completed successfully. The owner-reported test suite result was 80 total: 80 passed, 0 failed, and 0 skipped. Earlier checkpoints recorded nine skipped symlink tests; those historical results are retained in the checkpoint history and should not be confused with the latest reported run.
 
 ## Running and connecting
 
@@ -135,8 +135,8 @@ projects/demo/PROJECT_STATE.md is a demonstration copy. The root PROJECT_STATE.m
 
 ## Known limitations
 
-- A successful local git_commit was verified on 2026-10-16, but the resulting commit has not been pushed to origin/master.
-- Nine symlink-dependent tests were skipped in the October 15 run, so symlink-specific protection was not proven by that run. The latest October 16 test run passed all 80 tests with zero failures and zero skips. Ordinary path-traversal and absolute Windows path rejection were verified live previously.The latest build and test commands were run on October 16, 2026; see the verification section above.
+- A successful local git_commit was verified on 2026-10-16. The current remote status of that commit has not been independently verified.
+- Nine symlink-dependent tests were skipped in an earlier run, so symlink-specific protection was not proven by that run. The latest October 16 result is owner-reported as 80 passed, 0 failed, and 0 skipped. Ordinary path-traversal and absolute Windows path rejection were verified live previously. The build and test commands were reported run on October 16, 2026; see the verification section above.
 - PM2 restart and reboot persistence, invalid-token behaviour and `/mcp/direct` are unverified.
 - `delete_file` is permanent and cannot be undone through the tools.
 - The stateless transport sends no server-initiated notifications (D-008), and a small check-then-use race remains in path resolution (D-002).

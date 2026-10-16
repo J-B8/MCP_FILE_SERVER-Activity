@@ -2,17 +2,17 @@
 
 > Purpose: current status of the project at a glance. Detail and evidence live in CHECKPOINTS.md (verified results), PLAN_LOG.md (plan vs done) and DECISIONS.md (why).
 >
-> Last updated: 2026-10-15
+> Last updated: 2026-10-16
 
 ## Project
 
-Node.js + TypeScript MCP file server using the official TypeScript MCP SDK and Streamable HTTP transport. It exposes eight tools for working within a sandboxed workspace.
+Node.js + TypeScript MCP file server using the official TypeScript MCP SDK and stateless Streamable HTTP transport. It exposes eight tools for work within a sandboxed workspace.
 
 ## Evidence key
 
 - **Automated**: results from the automated test suite.
-- **Live**: a tool or endpoint was called and its result was checked during this session.
-- **Reported**: recorded by the project owner or in earlier handoff notes, but not independently verified here.
+- **Live**: a tool or endpoint was called and its result was observed.
+- **Reported**: stated by the project owner or recorded in handoff notes, but not independently re-run here.
 - **Not verified**: no confirmed result is available.
 
 Automated results and live verification are different forms of evidence and must not be merged (D-013).
@@ -21,75 +21,48 @@ Automated results and live verification are different forms of evidence and must
 
 | Milestone | Status | Notes |
 |---|---|---|
-| M1 Skeleton | COMPLETE, PASSED | MCP Inspector connected to the local Streamable HTTP endpoint. All eight tools were discovered. |
-| M2 Sandbox and core file tools | COMPLETE; symlink verification gap remains | Core file operations and path protections have automated coverage. Nine symlink-dependent tests were skipped. |
-| M3 Deployment | IN PROGRESS | PM2 is online and the local health endpoint responds. Restart/reboot persistence and authentication edge cases remain unverified. |
-| M4 Remaining tools and protocol | Implemented; completion not fully verified | All eight tools appear in Inspector. Live calls succeeded for several tools; successful git_commit remains untested live. |
+| M1 Skeleton | Complete | Local Streamable HTTP connection and all eight tools were discovered in MCP Inspector. |
+| M2 Sandbox and core file tools | Implemented; residual verification gap | Path traversal and absolute-path rejection were verified live. Earlier test runs skipped nine symlink-dependent tests; the live symlink-escape behavior remains unverified. |
+| M3 Deployment | Partially verified | PM2 was observed online and the local health endpoint returned OK on 2026-10-15. Restart/reboot persistence and authentication edge cases remain unverified. |
+| M4 Remaining tools and protocol | Implemented; verification evidence varies by tool | All eight tools appeared in Inspector. A successful local `git_commit` was verified through MCP Inspector on 2026-10-16. Claude live calls were recorded for seven tools; successful `git_commit` through Claude was not verified. |
 
-## Latest automated results
+## Latest owner-reported build and test results
 
-- Build: `npm.cmd run build` completed without visible TypeScript errors on 2026-10-15.
-- Tests: `npm.cmd test` reported 80 total, 71 passed, 0 failed, and 9 skipped.
-- The nine skipped tests concern symbolic-link scenarios that could not run because symbolic links were unavailable in the test environment. Skipped tests are not counted as passed.
-- These results reflect the commands run during this session. They do not independently establish the state of every working-tree file at the time of execution.
+- `npm.cmd run typecheck`: passed on 2026-10-16.
+- `npm.cmd run build`: passed on 2026-10-16.
+- `npm.cmd test`: 80 passed, 0 failed, 0 skipped on 2026-10-16.
+- These results are owner-reported. Earlier checkpoints record 71 passed and nine skipped symlink-dependent tests. Do not rewrite those historical results as if they were the same run.
+- The latest reported test result does not independently prove the behavior of the deployed service or establish that the final source diff was reviewed.
 
-## Live verification through MCP Inspector
+## Live verification and deployment evidence
 
-| Tool or control | Result |
+| Item | Evidence |
 |---|---|
-| MCP connection and tool discovery | Connected to `http://localhost:3000/mcp` using Streamable HTTP; all eight tools displayed. |
-| `list_files` | Passed; workspace entries returned. |
-| `read_file` | Passed; README.md returned all 147 lines. |
-| `search_code` | Passed; returned four matching lines across seven scanned files. |
-| `git_status` | Passed; output matched the terminal working-tree status. |
-| `write_file` create | Passed with a disposable file. |
-| `write_file` overwrite refusal | Passed; `overwrite=false` refused an existing file and the original content remained unchanged. |
-| `str_replace` single-match replacement | Passed in an earlier disposable-file check. |
-| `str_replace` multiple-match refusal | Passed; two matches were detected and the file remained unchanged. |
-| `delete_file` | Passed; disposable test files were deleted. |
-| Health endpoint | `GET /health` returned `{"status":"ok","name":"mcp-file-server"}`. |
-| MCP endpoint GET | Returned HTTP 405 with `Use POST /mcp`, consistent with the endpoint expecting POST requests. |
-| Path protection | Traversal and an absolute Windows path were previously rejected live. |
-| `git_commit` outside-workspace path rejection | Previously verified live; no repository state changed. |
-| `git_commit` successful commit | Not yet verified live. |
+| MCP Inspector tool discovery | All eight tools were displayed during a local Streamable HTTP session. |
+| Core file tools | Live calls recorded for list/read/search/status and disposable-file create/replace/delete checks. |
+| Safeguards | Live rejection recorded for `../` and an absolute Windows path; overwrite refusal and multiple-match replacement refusal were also recorded. |
+| `git_commit` path restriction | Live rejection of an outside-workspace path recorded on 2026-10-15; no repository state change. |
+| `git_commit` successful commit | Local Inspector test recorded on 2026-10-16. Commit: `5d2860d12947425d0c76c56d0702081bb704fea5`; message: `test: verify git_commit tool`; test file: `workspace/git-commit-test.txt`. |
+| Health endpoint / PM2 | `GET /health` returned `{"status":"ok","name":"mcp-file-server"}`; PM2 reported `mcp-file-server` online on 2026-10-15. |
+| Public endpoint | An unauthenticated POST to public `/mcp/direct` reportedly returned HTTP 401. This does not establish the behavior of every endpoint or token state. |
+| Claude connector | Seven tools had live calls recorded. A successful `git_commit` through Claude was not verified. |
 
-## Automated-only and unverified behavior
+## Still unverified
 
-- `git_commit`: successful live commit has not been run. Refusal when changes are already staged is covered by automated tests, as reported.
-- Symlink protection is implemented, but the nine symlink-dependent tests did not execute in this environment.
-- Invalid-token behavior, any Bearer-header path, `/mcp/direct` authentication, and PM2 restart/reboot persistence remain unverified.
-- The successful MCP tool calls do not independently prove which operating-system process served every request.
+- Current remote status of commit `5d2860d12947425d0c76c56d0702081bb704fea5`; do not infer push status from an old checkpoint.
+- Invalid-token behavior, Bearer-header handling, and authentication behavior of `/mcp/direct`.
+- PM2 restart/reboot persistence.
+- Live symlink-escape behavior, despite implementation and test coverage claims.
+- Whether the final documentation diff is consistent with all current source changes.
+- Whether untracked `init.json` and `initialize-request.json` belong in the submission. Do not delete or stage them without review.
 
-## Deployment status
+## Working-tree context from the latest owner-provided snapshot
 
-- PM2 currently reports `mcp-file-server` as `online` after it was started during this session.
-- Local `GET /health` returned the expected JSON response.
-- MCP Inspector connected to `http://localhost:3000/mcp` using Streamable HTTP and displayed all eight tools.
-- `GET /mcp` returned HTTP 405 and instructed the client to use POST. This is not by itself evidence of a server failure.
-- Public ngrok access, OAuth metadata, invalid-token handling, `/mcp/direct`, and PM2 persistence are not reverified in this session; see earlier reports for their previous status.
-
-## Working tree
-
-Latest `git_status` output during this session:
-
-```text
-## master...origin/master
- M src/index.ts
- M workspace/CHECKPOINTS.md
- M workspace/DECISIONS.md
- M workspace/PROJECT_STATE.md
- M workspace/README.md
-?? init.json
-?? initialize-request.json
-```
-
-Nothing is staged, and no commits were made during tonight's verification. The two untracked JSON files have not yet been reviewed for inclusion in the submission. Do not delete them without approval.
+The last local status snapshot supplied for review listed modified documentation files and two untracked JSON files. A separate later snapshot in earlier handoff notes also included `src/index.ts`. These are historical snapshots, not a live query of the user's local working tree.
 
 ## Remaining work
 
-1. Refresh CHECKPOINTS.md and append tonight's progress to PLAN_LOG.md.
-2. Review `init.json` and `initialize-request.json` and decide whether they belong in the submission; do not delete them without approval.
-3. Verify PM2 restart/persistence and remaining authentication behavior if time allows.
-4. Keep the nine skipped symlink tests documented unless they can be executed in a suitable environment.
-5. Review the final Git diff and select only approved files for any eventual commit.
-6. Prepare a repeatable demo using the already verified tools and safeguards.
+1. Review the final diff of the intended documentation files against the actual local changes.
+2. Confirm which files, if any, should be included in the submission; review the two JSON files before staging.
+3. Verify remote status before claiming the local test commit has or has not been pushed.
+4. Preserve all authentication, deployment, and symlink caveats until supported by fresh evidence.
