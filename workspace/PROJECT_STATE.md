@@ -2,42 +2,94 @@
 
 > Purpose: current status of the project at a glance. Detail and evidence live in CHECKPOINTS.md (verified results), PLAN_LOG.md (plan vs done) and DECISIONS.md (why).
 >
-> Last updated: 2026-10-09
+> Last updated: 2026-10-15
 
 ## Project
 
-Node.js + TypeScript MCP file server (official TypeScript MCP SDK, Streamable HTTP, stateless, bound to 127.0.0.1) exposing sandboxed file tools over a single workspace root.
+Node.js + TypeScript MCP file server using the official TypeScript MCP SDK and Streamable HTTP transport. It exposes eight tools for working within a sandboxed workspace.
+
+## Evidence key
+
+- **Automated**: results from the automated test suite.
+- **Live**: a tool or endpoint was called and its result was checked during this session.
+- **Reported**: recorded by the project owner or in earlier handoff notes, but not independently verified here.
+- **Not verified**: no confirmed result is available.
+
+Automated results and live verification are different forms of evidence and must not be merged (D-013).
 
 ## Milestone status
 
 | Milestone | Status | Notes |
 |---|---|---|
-| M1 Skeleton | COMPLETE, PASSED | Server boots on http://127.0.0.1:3000/mcp; list_files verified in MCP Inspector; `../..` rejected. |
-| M2 Sandbox and core file tools | COMPLETE | list_files, read_file, write_file, str_replace, delete_file. Windows run: 73 tests, 64 passed, 0 failed, 9 skipped. The 9 skipped tests are symlink tests that could not run because the Windows environment did not permit symbolic-link creation. |
-| M3 Deployment | IN PROGRESS (not complete) | See below. |
+| M1 Skeleton | COMPLETE, PASSED | MCP Inspector connected to the local Streamable HTTP endpoint. All eight tools were discovered. |
+| M2 Sandbox and core file tools | COMPLETE; symlink verification gap remains | Core file operations and path protections have automated coverage. Nine symlink-dependent tests were skipped. |
+| M3 Deployment | IN PROGRESS | PM2 is online and the local health endpoint responds. Restart/reboot persistence and authentication edge cases remain unverified. |
+| M4 Remaining tools and protocol | Implemented; completion not fully verified | All eight tools appear in Inspector. Live calls succeeded for several tools; successful git_commit remains untested live. |
 
-## M3 Deployment: current evidence
+## Latest automated results
 
-Reported by the project owner (command output, not independently re-run by Claude):
+- Build: `npm.cmd run build` completed without visible TypeScript errors on 2026-10-15.
+- Tests: `npm.cmd test` reported 80 total, 71 passed, 0 failed, and 9 skipped.
+- The nine skipped tests concern symbolic-link scenarios that could not run because symbolic links were unavailable in the test environment. Skipped tests are not counted as passed.
+- These results reflect the commands run during this session. They do not independently establish the state of every working-tree file at the time of execution.
 
-- PM2 7.0.4 reports `mcp-file-server` as online.
-- Local `/health` returns `{"status":"ok","name":"mcp-file-server"}`.
-- Public ngrok `/health` returns HTTP 200.
-- Unauthenticated `POST /mcp` returns HTTP 401.
+## Live verification through MCP Inspector
 
-Observed by Claude (2026-10-09, through the connected MCP connection): `list_files` and `read_file` succeeded.
+| Tool or control | Result |
+|---|---|
+| MCP connection and tool discovery | Connected to `http://localhost:3000/mcp` using Streamable HTTP; all eight tools displayed. |
+| `list_files` | Passed; workspace entries returned. |
+| `read_file` | Passed; README.md returned all 147 lines. |
+| `search_code` | Passed; returned four matching lines across seven scanned files. |
+| `git_status` | Passed; output matched the terminal working-tree status. |
+| `write_file` create | Passed with a disposable file. |
+| `write_file` overwrite refusal | Passed; `overwrite=false` refused an existing file and the original content remained unchanged. |
+| `str_replace` single-match replacement | Passed in an earlier disposable-file check. |
+| `str_replace` multiple-match refusal | Passed; two matches were detected and the file remained unchanged. |
+| `delete_file` | Passed; disposable test files were deleted. |
+| Health endpoint | `GET /health` returned `{"status":"ok","name":"mcp-file-server"}`. |
+| MCP endpoint GET | Returned HTTP 405 with `Use POST /mcp`, consistent with the endpoint expecting POST requests. |
+| Path protection | Traversal and an absolute Windows path were previously rejected live. |
+| `git_commit` outside-workspace path rejection | Previously verified live; no repository state changed. |
+| `git_commit` successful commit | Not yet verified live. |
 
-## Caveats
+## Automated-only and unverified behavior
 
-- The successful Claude calls do not independently prove which process served them. They are consistent with the PM2-managed server but do not demonstrate it.
-- Symlink protection remains incompletely verified: the implementation exists (resolveSafe), but the 9 symlink-dependent automated tests have never executed. They skipped on Windows (see D-010).
-- Claude's calls were made without a bearer token, so they do not establish how authenticated access behaves. The 401 on unauthenticated POST /mcp is the owner-reported evidence that auth is enforced on that route.
+- `git_commit`: successful live commit has not been run. Refusal when changes are already staged is covered by automated tests, as reported.
+- Symlink protection is implemented, but the nine symlink-dependent tests did not execute in this environment.
+- Invalid-token behavior, any Bearer-header path, `/mcp/direct` authentication, and PM2 restart/reboot persistence remain unverified.
+- The successful MCP tool calls do not independently prove which operating-system process served every request.
+
+## Deployment status
+
+- PM2 currently reports `mcp-file-server` as `online` after it was started during this session.
+- Local `GET /health` returned the expected JSON response.
+- MCP Inspector connected to `http://localhost:3000/mcp` using Streamable HTTP and displayed all eight tools.
+- `GET /mcp` returned HTTP 405 and instructed the client to use POST. This is not by itself evidence of a server failure.
+- Public ngrok access, OAuth metadata, invalid-token handling, `/mcp/direct`, and PM2 persistence are not reverified in this session; see earlier reports for their previous status.
+
+## Working tree
+
+Latest `git_status` output during this session:
+
+```text
+## master...origin/master
+ M src/index.ts
+ M workspace/CHECKPOINTS.md
+ M workspace/DECISIONS.md
+ M workspace/PROJECT_STATE.md
+ M workspace/README.md
+?? init.json
+?? initialize-request.json
+```
+
+Nothing is staged, and no commits were made during tonight's verification. The two untracked JSON files have not yet been reviewed for inclusion in the submission. Do not delete them without approval.
 
 ## Remaining work
 
-1. Verify PM2 persistence and restart behavior (survives restart, reboot/resurrect as intended).
-2. Test authenticated external MCP access (valid bearer token succeeds; missing or wrong token is rejected) from a real external MCP client.
-3. Implement and test `search_code`, `git_status` and `git_commit`, if not already present. As of 2026-10-09 only the five core file tools were observed through the connection.
-4. Run the 9 symlink tests on an environment that permits symlinks and record the result.
-5. Complete documentation and demo preparation.
-6. Record M3 in CHECKPOINTS.md as COMPLETE only after items 1 and 2 are verified.
+1. Refresh CHECKPOINTS.md and append tonight's progress to PLAN_LOG.md.
+2. Review `init.json` and `initialize-request.json` and decide whether they belong in the submission; do not delete them without approval.
+3. Verify PM2 restart/persistence and remaining authentication behavior if time allows.
+4. Keep the nine skipped symlink tests documented unless they can be executed in a suitable environment.
+5. Review the final Git diff and select only approved files for any eventual commit.
+6. Prepare a repeatable demo using the already verified tools and safeguards.

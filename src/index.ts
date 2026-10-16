@@ -32,7 +32,7 @@ app.use((req, _res, next) => {
  * authorize access, and exchange authorization codes
  * for Bearer access tokens.
  */
-
+app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 const validateAccessToken = configureOAuth(app, {
@@ -52,6 +52,10 @@ async function handleMcpRequest(
     new StreamableHTTPServerTransport({
       sessionIdGenerator: undefined,
     });
+
+  transport.onerror = (error) => {
+    console.error("MCP transport error:", error);
+  };
 
   res.on("close", () => {
     void transport.close();

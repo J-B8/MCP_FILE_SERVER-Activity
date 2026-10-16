@@ -65,3 +65,22 @@
 - Decision: symlink-dependent tests skip themselves instead of failing when the OS refuses symbolic-link creation.
 - Why: the Windows test environment did not permit symbolic-link creation, so the tests must report the limitation honestly rather than treating the environment restriction as an implementation failure.
 - Trade-off: a skipped run proves less on that machine (here: 9 tests). The implementation is deliberately not changed just to avoid the skips.
+
+## D-011 Public access requires authentication; Claude connects through OAuth
+
+- Supersedes: the "No auth yet" note in the trade-off of D-008 (D-008 itself is unchanged).
+- Decision: the public `/mcp` endpoint rejects unauthenticated requests with HTTP 401, and Claude's connection was authorized through OAuth. Both are owner-reported. The mechanism, the status of the earlier Bearer-token design and the behaviour of `/mcp/direct` are not verified.
+- Why: not recorded. The owner has not stated the reason.
+- Trade-off: invalid-token behaviour, any Bearer-header path and `/mcp/direct` are untested. Public access also depends on the ngrok tunnel being online.
+
+## D-012 git_commit commits only explicitly named paths and refuses when changes are already staged
+
+- Decision: git_commit takes explicit paths inside the workspace (1 to 50) and a message. A path outside the workspace is rejected (verified live 2026-10-15). It refuses to run when changes are already staged (covered by automated tests per the owner; not verified live).
+- Why: **inference, not a confirmed owner decision.** The behaviour means a commit contains only what the agent named and cannot absorb staged work from elsewhere. The owner has not recorded the actual reason.
+- Trade-off: staged changes must be handled outside the tool first. Files outside the workspace root, such as project source, cannot be committed through this tool. A successful live commit has not yet been tested.
+
+## D-013 Handoff documents keep automated results separate from live verification
+
+- Decision: notes label evidence as Automated, Live, Reported or Not verified, and do not merge them. Run dates and working-tree state are recorded only when known.
+- Why: passing tests do not prove the deployed connection works, and a live call does not prove edge cases. The owner asked for this distinction during the final review.
+- Trade-off: notes are longer and need dates.
