@@ -193,12 +193,12 @@ The latest test output confirms that all 80 tests passed in that run. Re-run the
 
 ## Project Handoff Protocol
 
-The project uses four handoff components to support continuity across agent sessions:
+The project uses four handoff files to support continuity across agent sessions:
 
 - `PROJECT_STATE.md` — records the current project state.
-- `PLAN_LOG/` — records plans and tool-call activity.
-- `CHECKPOINTS/` — records progress and handoff checkpoints.
-- `DECISIONS/` — records important decisions and their rationale.
+- `PLAN_LOG.md` — records plans and tool-call activity.
+- `CHECKPOINTS.md` — records progress and handoff checkpoints.
+- `DECISIONS.md` — records important decisions and their rationale.
 
 Keep these files consistent with the actual repository state. Before a new session or major change, review the current state and relevant decisions. Record the plan before acting and update the checkpoint when handing work off.
 
