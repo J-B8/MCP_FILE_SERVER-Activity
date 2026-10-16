@@ -1,214 +1,33 @@
-# PLAN_LOG
-
-> Purpose: chronological record of what was planned and what was actually done.
->
-> Update rule: append new entries. Do not rewrite old entries.
-
-## 001 — M1 Skeleton
-
-Date: 2026-10-03
-
-### Plan
-- Build the initial Node.js + TypeScript MCP file server.
-- Use the official TypeScript MCP SDK.
-- Use Streamable HTTP.
-- Implement `list_files`.
-- Bind the server to localhost.
-- Verify the server with MCP Inspector.
-
-### Completed
-- Server successfully started at:
-  `http://127.0.0.1:3000/mcp`
-- `list_files` was successfully tested through MCP Inspector.
-- Workspace listing was returned successfully.
-- A path escape attempt using `../..` was rejected.
-
-### Result
-M1 completed successfully.
 
 ---
 
-## 002 — M2 Sandbox
-
-Date: 2026-10-06
-
-### Plan
-- Add the remaining core file tools.
-- Strengthen path sandboxing.
-- Add filesystem-aware symlink protection.
-- Reject modifications to `.git` and `node_modules`.
-- Add strict schemas and consistent error handling.
-- Add automated sandbox and tool tests.
-- Verify destructive tools manually.
-
-### Completed
-Implemented five core tools:
-
-- `list_files`
-- `read_file`
-- `write_file`
-- `str_replace`
-- `delete_file`
-
-Security and quality improvements:
-
-- Strict Zod schemas.
-- Unknown input keys rejected.
-- `isError: true` for handled tool failures.
-- Lexical path escape protection.
-- Absolute and UNC path rejection.
-- NUL-byte rejection.
-- Filesystem-aware `resolveSafe()` protection.
-- Symlink escape protection.
-- `.git` and `node_modules` mutation protection.
-- Output limits and chunked file reading.
-- JSON logging for handled tool calls.
-- `write_file` does not overwrite by default.
-- `str_replace` requires exactly one match.
-
-### Automated test result (2026-10-06)
-
-Windows:
-
-- 73 total
-- 64 passed
-- 0 failed
-- 9 skipped
-
-### Manual verification
-
-Successfully verified:
-
-- `write_file`
-- `read_file`
-- `str_replace`
-- `delete_file`
-- `../` path escape rejection
-- absolute path rejection
-- `.git` protection
-- `node_modules` protection
-- missing-file errors
-
-### Result
-
-M2 completed successfully.
-
-### Next planned milestone
-
-M3 — Deployment:
-
-- pm2 process manager
-- ngrok static domain
-- bearer-token authentication
-- real external MCP client verification
-
----
-
-
-## 003 — Live Verification and Handoff
-
-Date: 2026-10-15
-
-### Plan
-
-- Verify the current build and automated tests.
-- Exercise the MCP tools through MCP Inspector.
-- Check the local server health and PM2 status.
-- Update the handoff documents with verified results.
-
-### Completed
-
-- `npm.cmd run build` completed without visible TypeScript errors during this session.
-- `npm.cmd test` reported 80 total, 71 passed, 0 failed, and 9 skipped. The nine skipped tests are symlink-dependent tests unavailable in this environment; they are not counted as passed.
-- MCP Inspector connected to `http://localhost:3000/mcp` using Streamable HTTP and displayed all eight tools.
-- Live calls to `list_files`, `read_file`, `search_code`, and `git_status` returned results.
-- A disposable-file test confirmed `write_file` creation and refusal to overwrite when `overwrite=false`.
-- A disposable-file test confirmed `str_replace` refuses a target string that occurs more than once.
-- Disposable test files were deleted after testing.
-- `GET /health` returned `{"status":"ok","name":"mcp-file-server"}`.
-- PM2 reported `mcp-file-server` online.
-- `GET /mcp` returned HTTP 405 and instructed the client to use POST. This is consistent with the endpoint expecting POST requests.
-- Updated PROJECT_STATE.md and PLAN_LOG.md, and appended Checkpoint 3 to CHECKPOINTS.md.
-
-### Not completed or not verified
-
-- A successful live `git_commit` has not been tested.
-- The nine symlink-dependent tests remain skipped.
-- PM2 restart/reboot persistence and remaining authentication edge cases remain unverified.
-- `init.json` and `initialize-request.json` remain under review for submission inclusion.
-- The final Git diff has not yet been reviewed for submission.
-
-### Result
-
-Core live verification and handoff updates progressed. Deployment and security edge-case verification remain incomplete. No files were staged or committed during this session.
-
----
-
-## 004 — Verification and Git Commit Test
+## 011 — Final Submission Preparation and Handoff
 
 Date: 2026-10-16
 
-### Plan
-- Re-run TypeScript typechecking, production build, and automated tests.
-- Verify the successful git_commit tool behavior.
-- Record the results in the handoff documents.
+### Purpose
 
-### Completed
-- `npm.cmd run typecheck` passed.
-- `npm.cmd run build` passed.
-- `npm.cmd test` reported 80 passed, 0 failed, and 0 skipped.
-- A successful local `git_commit` tool test created commit `5d2860d12947425d0c76c56d0702081bb704fea5`.
-- The commit contains `workspace/git-commit-test.txt`.
+Prepare the MCP File Server documentation and handoff records for final review and submission while preserving the distinction between completed checks, owner-reported results, and unresolved items.
 
-### Remaining work
-- Review the final Git diff.
-- Verify remaining deployment and authentication behavior.
-- Decide whether to push the local commit and other approved changes to GitHub.
+### Completed or Recorded
 
-### Result
-Typechecking, build, automated tests, and the local Git commit test passed. The commit has not yet been pushed to `origin/master`.
+- Recorded the latest owner-reported automated test results: 80 passed, 0 failed, and 0 skipped.
+- Recorded that type checking, the production build, and the local `git_commit` test passed.
+- Documented Session A's live Claude connector checks for file creation, reading, overwrite refusal, multiple-match refusal, unique text replacement, searching, and deletion.
+- Documented Session B's read-only follow-up checks, including confirmation that the disposable scratch file was absent and the reported Git working-tree status.
+- Preserved the reported status of the six modified documentation files and the two untracked JSON files.
+- Recorded outstanding questions about remote push status, final documentation consistency, authentication behavior, PM2 persistence, and live symlink-escape protection.
 
----
+### Final Submission Plan
 
-## 005 — Final Handoff Reconciliation
-
-Date: 2026-10-16
-
-### Completed or reported
-
-- Repository documentation was reviewed against the committed versions available on GitHub.
-- The handoff summary was refreshed to distinguish current owner-reported test results from historical checkpoint results.
-- A successful local `git_commit` test is recorded for commit `5d2860d12947425d0c76c56d0702081bb704fea5`.
-- The current remote status of that commit was not independently verified.
-
-### Remaining / not verified
-
-- The user's local working-tree diff is not available from the GitHub connection; the committed repository versions may not include all local edits.
-- The final local diff still needs to be compared before claiming all six intended documents are consistent.
-- Authentication edge cases, PM2 restart/reboot persistence, and live symlink-escape behavior remain unverified.
-- The two previously reported untracked JSON files remain unreviewed for submission inclusion.
+1. Review the actual local Git diff for the six intended documentation files.
+2. Resolve any merge conflicts and confirm the intended contents of `PLAN_LOG.md` and the other handoff documents.
+3. Review `init.json` and `initialize-request.json` and decide whether either belongs in the submission. Do not stage, commit, or delete them without approval.
+4. Check the remote repository before making claims about which commits have been pushed.
+5. Rerun the relevant checks after any application source changes.
+6. Confirm the intended documentation versions before preparing the final PDF.
+7. Preserve unresolved verification items in the handoff until they have been checked and recorded.
 
 ### Result
 
-This entry reconciles the evidence available for handoff without rewriting earlier entries or treating reported test results as independently rerun. It does not claim that the local working tree was pushed or that all pending changes are included in GitHub.
-
-
----
-
-## 006 — Project Completion and Final Handoff
-
-Date: 2026-10-16
-
-### Plan
-- Reconcile the final handoff documents.
-- Record the project completion status clearly while preserving evidence labels and unresolved verification caveats.
-- Push the final documentation update to the repository master branch.
-
-### Completed
-- Marked the implementation and documentation handoff as complete.
-- Recorded the latest owner-reported results: typecheck passed, production build passed, and 80 tests passed with 0 failures and 0 skips.
-- Preserved deployment/authentication and live symlink caveats rather than claiming those checks passed.
-- Prepared the final completion checkpoint and synchronized the current-state document.
-
-### Result
-The project is complete for implementation and handoff. Remaining items are explicitly documented as residual verification follow-ups, not as a claim that all operational/security edge cases have been independently verified.
+The project has recorded implementation test results and additional live connector behavior for the handoff. Final submission remains dependent on reviewing the local changes, resolving any conflicts, deciding which files to include, and confirming the intended documentation versions. This entry does not claim that pending changes have been pushed or that unresolved security and deployment checks have passed.

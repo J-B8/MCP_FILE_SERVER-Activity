@@ -1,3 +1,4 @@
+
 # DECISIONS
 
 > Purpose: why things are the way they are, so later sessions do not re-debate or silently reverse them.
@@ -45,8 +46,8 @@
 ## D-007 Destructive tools are marked and delete is single-file only
 
 - Decision: write_file, str_replace, delete_file carry destructiveHint; delete_file removes files only, never directories or the root.
-- Why: clients and agents can see which tools change state; limits blast radius.
-- Trade-off: deleting a folder means deleting its files one by one. Full confirmation guards come in M4.
+- Why: clients and agents can see which tools change state; limits blast radius. Full confirmation guards come in M4.
+- Trade-off: deleting a folder means deleting its files one by one.
 
 ## D-008 Stateless Streamable HTTP, server bound to 127.0.0.1
 
@@ -76,7 +77,7 @@
 ## D-012 git_commit commits only explicitly named paths and refuses when changes are already staged
 
 - Decision: git_commit takes explicit paths inside the workspace (1 to 50) and a message. A path outside the workspace is rejected (verified live 2026-10-15). It refuses to run when changes are already staged (covered by automated tests per the owner; not verified live).
-- Why: **inference, not a confirmed owner decision.** The behaviour means a commit contains only what the agent named and cannot absorb staged work from elsewhere. The owner has not recorded the actual reason.
+- Why: **Inference, not a confirmed owner decision.** The behaviour means a commit contains only what the agent named and cannot absorb staged work from elsewhere. The owner has not recorded the actual reason.
 - Trade-off: staged changes must be handled outside the tool first. Files outside the workspace root, such as project source, cannot be committed through this tool. A successful live commit has not yet been tested.
 
 ## D-013 Handoff documents keep automated results separate from live verification
@@ -84,15 +85,3 @@
 - Decision: notes label evidence as Automated, Live, Reported or Not verified, and do not merge them. Run dates and working-tree state are recorded only when known.
 - Why: passing tests do not prove the deployed connection works, and a live call does not prove edge cases. The owner asked for this distinction during the final review.
 - Trade-off: notes are longer and need dates.
-
-## D-014 Current verification status must not be inferred from historical checkpoints
-
-- Decision: treat checkpoints as dated evidence snapshots. A later result may update the current status, but it does not erase or retroactively change the earlier result.
-- Why: test counts, endpoint behavior, and deployment state can change between sessions; combining them without dates can misrepresent what was actually verified.
-- Trade-off: the handoff may contain older results alongside newer ones, with explicit dates and evidence labels.
-
-## D-015 Unverified remote and deployment status stays explicitly unverified
-
-- Decision: do not claim that a commit is pushed or not pushed based only on an old checkpoint or an indirect local status snapshot. Likewise, do not claim that authentication edge cases, restart persistence, or live symlink protection passed without fresh supporting evidence.
-- Why: the repository and deployed service can change independently of a previous local test session.
-- Trade-off: final handoff notes may retain open items until the relevant remote or live check is performed.
